@@ -285,7 +285,7 @@ export default function SalesPage() {
               <TableBody>
                 {sales.map((sale) => (
                   <TableRow key={sale.id}>
-                    <TableCell>{isClient ? format(sale.date, "PPP p") : ''}</TableCell>
+                    <TableCell>{isClient ? format(new Date(sale.date), "PPP p") : ''}</TableCell>
                     <TableCell className="font-medium">{saleVariations[sale.variation]?.name ?? sale.variation}</TableCell>
                     <TableCell className="text-right">{sale.quantity}</TableCell>
                     <TableCell className="capitalize">{sale.type}</TableCell>
