@@ -13,12 +13,13 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PlusCircle } from "lucide-react";
-import { mockSales, type Sale } from "@/lib/data";
+import { mockSales, type Sale, saleVariations } from "@/lib/data";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
 const saleSchema = z.object({
-  amount: z.coerce.number().min(0.01, "Amount must be positive."),
+  variation: z.enum(Object.keys(saleVariations) as [keyof typeof saleVariations]),
+  quantity: z.coerce.number().int().min(1, "Quantity must be at least 1."),
   type: z.enum(["cash", "card"]),
 });
 
@@ -30,16 +31,20 @@ export default function SalesPage() {
   const form = useForm<z.infer<typeof saleSchema>>({
     resolver: zodResolver(saleSchema),
     defaultValues: {
-      amount: 0,
+      variation: "medium",
+      quantity: 1,
       type: "card",
     },
   });
 
   function onSubmit(values: z.infer<typeof saleSchema>) {
+    const variationDetails = saleVariations[values.variation];
     const newSale: Sale = {
       id: (sales.length + 1).toString(),
       date: new Date(),
-      amount: values.amount,
+      variation: values.variation,
+      quantity: values.quantity,
+      amount: variationDetails.price * values.quantity,
       type: values.type,
     };
     setSales([newSale, ...sales]);
@@ -47,7 +52,7 @@ export default function SalesPage() {
     setIsDialogOpen(false);
     toast({
         title: "Sale Logged",
-        description: `A new ${values.type} sale of $${values.amount.toFixed(2)} has been recorded.`,
+        description: `${values.quantity} x ${variationDetails.name} sale recorded for $${newSale.amount.toFixed(2)}.`,
     });
   }
 
@@ -71,12 +76,34 @@ export default function SalesPage() {
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                   <FormField
                     control={form.control}
-                    name="amount"
+                    name="variation"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Amount ($)</FormLabel>
+                        <FormLabel>Product</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a product" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {Object.entries(saleVariations).map(([key, {name}]) => (
+                                <SelectItem key={key} value={key}>{name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="quantity"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Quantity</FormLabel>
                         <FormControl>
-                          <Input type="number" step="0.01" {...field} placeholder="e.g. 12.50" />
+                          <Input type="number" {...field} placeholder="e.g. 1" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -119,6 +146,8 @@ export default function SalesPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Date</TableHead>
+                  <TableHead>Product</TableHead>
+                  <TableHead className="text-right">Quantity</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead className="text-right">Amount</TableHead>
                 </TableRow>
@@ -127,6 +156,8 @@ export default function SalesPage() {
                 {sales.map((sale) => (
                   <TableRow key={sale.id}>
                     <TableCell>{format(sale.date, "PPP p")}</TableCell>
+                    <TableCell className="font-medium">{saleVariations[sale.variation].name}</TableCell>
+                    <TableCell className="text-right">{sale.quantity}</TableCell>
                     <TableCell className="capitalize">{sale.type}</TableCell>
                     <TableCell className="text-right font-medium">${sale.amount.toFixed(2)}</TableCell>
                   </TableRow>
