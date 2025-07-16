@@ -41,10 +41,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <Sidebar>
         <SidebarHeader>
           <div className="flex items-center gap-2 p-2">
-            <Button variant="ghost" size="icon" className="h-10 w-10 shrink-0">
-              <CookingPot className="h-6 w-6 text-primary" />
-            </Button>
-            <div className="flex flex-col">
+            <div className="flex flex-col px-2">
               <h2 className="font-headline text-lg font-semibold tracking-tight">
                 Zaalimmmm!
               </h2>
