@@ -3,8 +3,10 @@
 import Image from "next/image";
 import { AppLayout } from "@/components/app-layout";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { DollarSign, CreditCard, Wallet } from "lucide-react";
+import { mockSales, mockExpenses, mockInventory, saleVariationsInfo } from "@/lib/data";
+import type { Expense, InventoryItem, Sale, SaleVariation } from "@/lib/data";
 
 // Mock data
 const salesData = [
@@ -17,9 +19,63 @@ const salesData = [
   { name: 'Sun', sales: 3490, expenses: 4300 },
 ];
 
-const totalSales = 5600.50;
-const totalExpenses = 2345.20;
+const totalSales = mockSales.reduce((sum, sale) => sum + sale.amount, 0);
+const totalExpenses = mockExpenses.reduce((sum, expense) => sum + expense.amount, 0);
 const netProfit = totalSales - totalExpenses;
+
+// Process data for charts
+const expenseChartData = mockExpenses
+  .reduce((acc, expense) => {
+    const existing = acc.find(item => item.name === expense.category);
+    if (existing) {
+      existing.value += expense.amount;
+    } else {
+      acc.push({ name: expense.category, value: expense.amount });
+    }
+    return acc;
+  }, [] as { name: string; value: number }[])
+  .map(item => ({...item, name: item.name.charAt(0).toUpperCase() + item.name.slice(1)}));
+
+
+const salesByVariationData = mockSales.reduce((acc, sale) => {
+    const existing = acc.find(item => item.name === saleVariationsInfo[sale.variation].name);
+    if (existing) {
+      existing.value += sale.quantity;
+    } else {
+      acc.push({ name: saleVariationsInfo[sale.variation].name, value: sale.quantity });
+    }
+    return acc;
+}, [] as { name: string; value: number }[]);
+
+
+const inventoryChartData = mockInventory.map(item => ({
+  name: item.name,
+  value: item.quantity
+}));
+
+
+const COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))", "hsl(var(--chart-5))"];
+
+const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="rounded-lg border bg-background p-2 shadow-sm">
+          <div className="grid grid-cols-2 gap-2">
+            <div className="flex flex-col space-y-1">
+              <span className="text-[0.70rem] uppercase text-muted-foreground">
+                {payload[0].name}
+              </span>
+              <span className="font-bold text-muted-foreground">
+                {payload[0].value}
+              </span>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return null;
+};
+
 
 export default function DashboardPage() {
   return (
@@ -69,6 +125,67 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </div>
+        
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <Card className="flex flex-col">
+                <CardHeader>
+                    <CardTitle>Sales by Variation</CardTitle>
+                    <CardDescription>Units sold for each product.</CardDescription>
+                </CardHeader>
+                <CardContent className="flex-1 pb-0">
+                    <ResponsiveContainer width="100%" height={250}>
+                        <PieChart>
+                            <Pie data={salesByVariationData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
+                                {salesByVariationData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                ))}
+                            </Pie>
+                            <Tooltip content={<CustomTooltip />} />
+                            <Legend />
+                        </PieChart>
+                    </ResponsiveContainer>
+                </CardContent>
+            </Card>
+            <Card className="flex flex-col">
+                <CardHeader>
+                    <CardTitle>Expenses by Category</CardTitle>
+                    <CardDescription>Breakdown of expenses by category.</CardDescription>
+                </CardHeader>
+                <CardContent className="flex-1 pb-0">
+                    <ResponsiveContainer width="100%" height={250}>
+                        <PieChart>
+                            <Pie data={expenseChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
+                                {expenseChartData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                ))}
+                            </Pie>
+                            <Tooltip formatter={(value: number) => `PKR ${value.toFixed(2)}`} />
+                            <Legend />
+                        </PieChart>
+                    </ResponsiveContainer>
+                </CardContent>
+            </Card>
+            <Card className="flex flex-col">
+                <CardHeader>
+                    <CardTitle>Inventory Breakdown</CardTitle>
+                    <CardDescription>Current stock quantity by item.</CardDescription>
+                </CardHeader>
+                <CardContent className="flex-1 pb-0">
+                    <ResponsiveContainer width="100%" height={250}>
+                        <PieChart>
+                            <Pie data={inventoryChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
+                                {inventoryChartData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                ))}
+                            </Pie>
+                            <Tooltip content={<CustomTooltip />} />
+                            <Legend />
+                        </PieChart>
+                    </ResponsiveContainer>
+                </CardContent>
+            </Card>
+        </div>
+        
         <Card>
           <CardHeader>
             <CardTitle>Sales & Expenses Overview</CardTitle>
