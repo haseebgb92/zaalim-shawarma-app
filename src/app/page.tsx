@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { AppLayout } from "@/components/app-layout";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -24,6 +25,17 @@ export default function DashboardPage() {
   return (
     <AppLayout>
       <div className="flex flex-col gap-6">
+        <div className="mb-6 overflow-hidden rounded-lg shadow-md hidden md:block">
+            <Image
+            src="/zaalim-banner.png"
+            alt="Zaalimmm! Shawarma Banner"
+            width={1600}
+            height={350}
+            className="w-full object-cover"
+            priority
+            data-ai-hint="shawarma banner"
+            />
+        </div>
         <h1 className="font-headline text-3xl font-bold">Dashboard</h1>
         <div className="grid gap-4 md:grid-cols-3">
           <Card>
