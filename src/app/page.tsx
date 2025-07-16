@@ -32,7 +32,7 @@ export default function DashboardPage() {
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${totalSales.toFixed(2)}</div>
+              <div className="text-2xl font-bold">PKR {totalSales.toFixed(2)}</div>
               <p className="text-xs text-muted-foreground">+20.1% from last month</p>
             </CardContent>
           </Card>
@@ -42,7 +42,7 @@ export default function DashboardPage() {
               <CreditCard className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${totalExpenses.toFixed(2)}</div>
+              <div className="text-2xl font-bold">PKR {totalExpenses.toFixed(2)}</div>
               <p className="text-xs text-muted-foreground">+12.2% from last month</p>
             </CardContent>
           </Card>
@@ -52,7 +52,7 @@ export default function DashboardPage() {
               <Wallet className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${netProfit.toFixed(2)}</div>
+              <div className="text-2xl font-bold">PKR {netProfit.toFixed(2)}</div>
               <p className="text-xs text-muted-foreground">+35.3% from last month</p>
             </CardContent>
           </Card>
@@ -68,13 +68,14 @@ export default function DashboardPage() {
                 <BarChart data={salesData}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
                   <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
+                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `PKR${value}`} />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: "hsl(var(--background))",
                       borderColor: "hsl(var(--border))",
                       borderRadius: "var(--radius)",
                     }}
+                    formatter={(value: number) => `PKR ${value.toFixed(2)}`}
                   />
                   <Legend iconSize={10} />
                   <Bar dataKey="sales" fill="hsl(var(--primary))" name="Sales" radius={[4, 4, 0, 0]} />

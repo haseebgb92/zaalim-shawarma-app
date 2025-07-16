@@ -13,7 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PlusCircle } from "lucide-react";
-import { mockSales, type Sale, saleVariations } from "@/lib/data";
+import { mockSales, type Sale, saleVariations, type SaleVariation } from "@/lib/data";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
@@ -52,9 +52,18 @@ export default function SalesPage() {
     setIsDialogOpen(false);
     toast({
         title: "Sale Logged",
-        description: `${values.quantity} x ${variationDetails.name} sale recorded for $${newSale.amount.toFixed(2)}.`,
+        description: `${values.quantity} x ${variationDetails.name} sale recorded for PKR ${newSale.amount.toFixed(2)}.`,
     });
   }
+  
+  const salesByVariation = sales.reduce((acc, sale) => {
+    if (!acc[sale.variation]) {
+      acc[sale.variation] = { totalAmount: 0, quantity: 0 };
+    }
+    acc[sale.variation].totalAmount += sale.amount;
+    acc[sale.variation].quantity += sale.quantity;
+    return acc;
+  }, {} as Record<SaleVariation, { totalAmount: number; quantity: number }>);
 
   return (
     <AppLayout>
@@ -136,6 +145,28 @@ export default function SalesPage() {
             </DialogContent>
           </Dialog>
         </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Sales by Variation</CardTitle>
+            <CardDescription>Total sales for each product variation.</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4 md:grid-cols-2">
+            {Object.entries(saleVariations).map(([key, {name}]) => {
+              const data = salesByVariation[key as SaleVariation];
+              return (
+                <div key={key} className="flex items-center justify-between rounded-lg border p-3">
+                  <div>
+                    <p className="font-medium">{name}</p>
+                    <p className="text-sm text-muted-foreground">{data ? data.quantity : 0} units sold</p>
+                  </div>
+                  <p className="text-lg font-semibold">PKR {data ? data.totalAmount.toFixed(2) : '0.00'}</p>
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle>Recent Sales</CardTitle>
@@ -159,7 +190,7 @@ export default function SalesPage() {
                     <TableCell className="font-medium">{saleVariations[sale.variation].name}</TableCell>
                     <TableCell className="text-right">{sale.quantity}</TableCell>
                     <TableCell className="capitalize">{sale.type}</TableCell>
-                    <TableCell className="text-right font-medium">${sale.amount.toFixed(2)}</TableCell>
+                    <TableCell className="text-right font-medium">PKR {sale.amount.toFixed(2)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

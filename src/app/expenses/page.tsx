@@ -49,7 +49,7 @@ export default function ExpensesPage() {
     setIsDialogOpen(false);
     toast({
         title: "Expense Recorded",
-        description: `Expense of $${values.amount.toFixed(2)} for ${values.category} has been recorded.`,
+        description: `Expense of PKR ${values.amount.toFixed(2)} for ${values.category} has been recorded.`,
     })
   }
 
@@ -73,7 +73,7 @@ export default function ExpensesPage() {
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                   <FormField control={form.control} name="amount" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Amount ($)</FormLabel>
+                      <FormLabel>Amount (PKR)</FormLabel>
                       <FormControl><Input type="number" step="0.01" {...field} placeholder="e.g. 85.40" /></FormControl>
                       <FormMessage />
                     </FormItem>
@@ -129,7 +129,7 @@ export default function ExpensesPage() {
                     <TableCell>{format(expense.date, "PPP")}</TableCell>
                     <TableCell className="capitalize">{expense.category}</TableCell>
                     <TableCell>{expense.description}</TableCell>
-                    <TableCell className="text-right font-medium">${expense.amount.toFixed(2)}</TableCell>
+                    <TableCell className="text-right font-medium">PKR {expense.amount.toFixed(2)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
