@@ -1,8 +1,8 @@
 export const saleVariations = {
-  small: { name: "Small Shawarma", price: 8.00 },
-  medium: { name: "Medium Shawarma", price: 10.00 },
-  large: { name: "Large Shawarma", price: 12.00 },
-  "bun-burger": { name: "Bun Burger", price: 9.00 },
+  small: { name: "Small Shawarma", price: 800 },
+  medium: { name: "Medium Shawarma", price: 1000 },
+  large: { name: "Large Shawarma", price: 1200 },
+  "bun-burger": { name: "Bun Burger", price: 900 },
 } as const;
 
 export type SaleVariation = keyof typeof saleVariations;
@@ -33,11 +33,11 @@ export type InventoryItem = {
 };
 
 export const mockSales: Sale[] = [
-  { id: '1', date: new Date('2023-10-26T10:00:00Z'), variation: 'large', quantity: 1, amount: 12.00, type: 'card' },
-  { id: '2', date: new Date('2023-10-26T11:30:00Z'), variation: 'small', quantity: 2, amount: 16.00, type: 'cash' },
-  { id: '3', date: new Date('2023-10-25T14:00:00Z'), variation: 'medium', quantity: 3, amount: 30.00, type: 'card' },
-  { id: '4', date: new Date('2023-10-24T18:45:00Z'), variation: 'bun-burger', quantity: 1, amount: 9.00, type: 'cash' },
-  { id: '5', date: new Date('2023-10-23T12:15:00Z'), variation: 'large', quantity: 2, amount: 24.00, type: 'card' },
+  { id: '1', date: new Date('2023-10-26T10:00:00Z'), variation: 'large', quantity: 1, amount: 1200.00, type: 'card' },
+  { id: '2', date: new Date('2023-10-26T11:30:00Z'), variation: 'small', quantity: 2, amount: 1600.00, type: 'cash' },
+  { id: '3', date: new Date('2023-10-25T14:00:00Z'), variation: 'medium', quantity: 3, amount: 3000.00, type: 'card' },
+  { id: '4', date: new Date('2023-10-24T18:45:00Z'), variation: 'bun-burger', quantity: 1, amount: 900.00, type: 'cash' },
+  { id: '5', date: new Date('2023-10-23T12:15:00Z'), variation: 'large', quantity: 2, amount: 2400.00, type: 'card' },
 ];
 
 export const mockExpenses: Expense[] = [
@@ -48,10 +48,10 @@ export const mockExpenses: Expense[] = [
 ];
 
 export const mockInventory: InventoryItem[] = [
-  { id: '1', name: 'Chicken', quantity: 20, unit: 'kg', lastUpdated: new Date() },
-  { id: '2', name: 'Tomatoes', quantity: 8, unit: 'kg', lastUpdated: new Date() },
-  { id: '3', name: 'Pita Bread', quantity: 100, unit: 'pcs', lastUpdated: new Date() },
-  { id: '4', name: 'Tahini Sauce', quantity: 5, unit: 'l', lastUpdated: new Date() },
-  { id: '5', name: 'Onions', quantity: 15, unit: 'kg', lastUpdated: new Date() },
-  { id: '6', name: 'Lettuce', quantity: 5, unit: 'kg', lastUpdated: new Date() },
+  { id: '1', name: 'Chicken', quantity: 20, unit: 'kg', lastUpdated: new Date('2023-10-26T10:00:00Z') },
+  { id: '2', name: 'Tomatoes', quantity: 8, unit: 'kg', lastUpdated: new Date('2023-10-26T10:00:00Z') },
+  { id: '3', name: 'Pita Bread', quantity: 100, unit: 'pcs', lastUpdated: new Date('2023-10-26T10:00:00Z') },
+  { id: '4', name: 'Tahini Sauce', quantity: 5, unit: 'l', lastUpdated: new Date('2023-10-26T10:00:00Z') },
+  { id: '5', name: 'Onions', quantity: 15, unit: 'kg', lastUpdated: new Date('2023-10-26T10:00:00Z') },
+  { id: '6', name: 'Lettuce', quantity: 5, unit: 'kg', lastUpdated: new Date('2023-10-26T10:00:00Z') },
 ];
