@@ -14,6 +14,15 @@ export type Sale = {
   quantity: number;
   amount: number;
   type: 'cash' | 'easypaisa' | 'jazzcash';
+  editHistory?: {
+    editedAt: Date;
+    originalValues: {
+        variation: SaleVariation;
+        quantity: number;
+        type: 'cash' | 'easypaisa' | 'jazzcash';
+        amount: number;
+    }
+  }[];
 };
 
 export type Expense = {

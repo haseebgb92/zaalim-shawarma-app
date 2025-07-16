@@ -6,13 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PlusCircle, Pencil } from "lucide-react";
+import { PlusCircle, Pencil, History } from "lucide-react";
 import { mockSales, type Sale, saleVariationsInfo, type SaleVariation } from "@/lib/data";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -34,6 +35,8 @@ export default function SalesPage() {
   const [sales, setSales] = useState<Sale[]>(mockSales);
   const [isSaleDialogOpen, setIsSaleDialogOpen] = useState(false);
   const [isPriceDialogOpen, setIsPriceDialogOpen] = useState(false);
+  const [isEditSaleDialogOpen, setIsEditSaleDialogOpen] = useState(false);
+  const [editingSale, setEditingSale] = useState<Sale | null>(null);
   const [isClient, setIsClient] = useState(false);
   const { toast } = useToast();
 
@@ -71,7 +74,11 @@ export default function SalesPage() {
       "bun-burger": saleVariations["bun-burger"].price,
     },
   });
-  
+
+  const editSaleForm = useForm<z.infer<typeof saleSchema>>({
+    resolver: zodResolver(saleSchema),
+  });
+
   useEffect(() => {
     if (isPriceDialogOpen) {
         priceForm.reset({
@@ -83,6 +90,18 @@ export default function SalesPage() {
     }
   }, [isPriceDialogOpen, saleVariations, priceForm]);
 
+  useEffect(() => {
+    if (editingSale) {
+      editSaleForm.reset({
+        variation: editingSale.variation,
+        quantity: editingSale.quantity,
+        type: editingSale.type,
+      });
+      setIsEditSaleDialogOpen(true);
+    } else {
+      setIsEditSaleDialogOpen(false);
+    }
+  }, [editingSale, editSaleForm]);
 
   function onSaleSubmit(values: z.infer<typeof saleSchema>) {
     const variationDetails = saleVariations[values.variation];
@@ -115,6 +134,42 @@ export default function SalesPage() {
     toast({
       title: "Prices Updated",
       description: "Product prices have been successfully updated.",
+    });
+  }
+
+  function onEditSaleSubmit(values: z.infer<typeof saleSchema>) {
+    if (!editingSale) return;
+
+    const originalValues = {
+        variation: editingSale.variation,
+        quantity: editingSale.quantity,
+        type: editingSale.type,
+        amount: editingSale.amount,
+    };
+    
+    const variationDetails = saleVariations[values.variation];
+    const newAmount = variationDetails.price * values.quantity;
+
+    const updatedSale: Sale = {
+        ...editingSale,
+        ...values,
+        amount: newAmount,
+        editHistory: [
+            ...(editingSale.editHistory || []),
+            {
+                editedAt: new Date(),
+                originalValues,
+            }
+        ]
+    };
+    
+    setSales(prevSales => prevSales.map(s => s.id === editingSale.id ? updatedSale : s));
+    setEditingSale(null);
+    setIsEditSaleDialogOpen(false);
+
+    toast({
+        title: "Sale Updated",
+        description: `Sale ID ${editingSale.id} has been updated.`,
     });
   }
   
@@ -245,6 +300,77 @@ export default function SalesPage() {
           </div>
         </div>
 
+        <Dialog open={isEditSaleDialogOpen} onOpenChange={(open) => !open && setEditingSale(null)}>
+            <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Edit Sale (ID: {editingSale?.id})</DialogTitle>
+            </DialogHeader>
+            <Form {...editSaleForm}>
+                <form onSubmit={editSaleForm.handleSubmit(onEditSaleSubmit)} className="space-y-4">
+                <FormField
+                    control={editSaleForm.control}
+                    name="variation"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Product</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                            <SelectTrigger>
+                            <SelectValue placeholder="Select a product" />
+                            </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            {Object.entries(saleVariations).map(([key, {name}]) => (
+                                <SelectItem key={key} value={key}>{name} (PKR {saleVariations[key as SaleVariation].price.toFixed(2)})</SelectItem>
+                            ))}
+                        </SelectContent>
+                        </Select>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                <FormField
+                    control={editSaleForm.control}
+                    name="quantity"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Quantity</FormLabel>
+                        <FormControl>
+                        <Input type="number" {...field} placeholder="e.g. 1" />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                <FormField
+                    control={editSaleForm.control}
+                    name="type"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Payment Type</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                            <SelectTrigger>
+                            <SelectValue placeholder="Select payment type" />
+                            </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            <SelectItem value="cash">Cash</SelectItem>
+                            <SelectItem value="easypaisa">Easypaisa</SelectItem>
+                            <SelectItem value="jazzcash">Jazzcash</SelectItem>
+                        </SelectContent>
+                        </Select>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                <Button type="submit" className="w-full">Save Changes</Button>
+                </form>
+            </Form>
+            </DialogContent>
+        </Dialog>
+
+
         <Card>
           <CardHeader>
             <CardTitle>Sales by Variation</CardTitle>
@@ -272,6 +398,7 @@ export default function SalesPage() {
             <CardDescription>A list of your recent sales transactions.</CardDescription>
           </CardHeader>
           <CardContent>
+            <TooltipProvider>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -280,20 +407,51 @@ export default function SalesPage() {
                   <TableHead className="text-right">Quantity</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead className="text-right">Amount</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {sales.map((sale) => (
                   <TableRow key={sale.id}>
-                    <TableCell>{isClient ? format(new Date(sale.date), "PPP p") : ''}</TableCell>
+                    <TableCell>
+                        <div className="flex items-center gap-2">
+                            {isClient ? format(new Date(sale.date), "PPP p") : ''}
+                            {sale.editHistory && sale.editHistory.length > 0 && (
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <History className="h-4 w-4 text-muted-foreground" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <div className="text-sm">
+                                            <p className="font-bold">Edit History:</p>
+                                            {sale.editHistory.map((edit, index) => (
+                                                <div key={index} className="mt-2 border-t pt-2">
+                                                    <p><b>Edited on:</b> {format(new Date(edit.editedAt), "PPP p")}</p>
+                                                    <p><b>From:</b> {edit.originalValues.quantity} x {saleVariations[edit.originalValues.variation as SaleVariation]?.name} (PKR {edit.originalValues.amount.toFixed(2)})</p>
+                                                    <p><b>To:</b> {index === sale.editHistory!.length - 1 ? `${sale.quantity} x ${saleVariations[sale.variation]?.name} (PKR ${sale.amount.toFixed(2)})` : '...see next edit'}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </TooltipContent>
+                                </Tooltip>
+                            )}
+                        </div>
+                    </TableCell>
                     <TableCell className="font-medium">{saleVariations[sale.variation]?.name ?? sale.variation}</TableCell>
                     <TableCell className="text-right">{sale.quantity}</TableCell>
                     <TableCell className="capitalize">{sale.type}</TableCell>
                     <TableCell className="text-right font-medium">PKR {sale.amount.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">
+                        <Button variant="ghost" size="icon" onClick={() => setEditingSale(sale)}>
+                            <Pencil className="h-4 w-4" />
+                            <span className="sr-only">Edit Sale</span>
+                        </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
+            </TooltipProvider>
           </CardContent>
         </Card>
       </div>
