@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Image from "next/image";
 import {
   SidebarProvider,
   Sidebar,
@@ -45,9 +46,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </Button>
             <div className="flex flex-col">
               <h2 className="font-headline text-lg font-semibold tracking-tight">
-                Shawarma
+                Zaalimmmm!
               </h2>
-              <p className="text-sm text-muted-foreground -mt-1">Studio</p>
+              <p className="text-sm text-muted-foreground -mt-1">Shawarma</p>
             </div>
           </div>
         </SidebarHeader>
@@ -78,9 +79,22 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <SidebarTrigger className="md:hidden" />
           {/* User profile button can be added here */}
         </header>
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
-            {children}
-        </main>
+        <div className="p-4 md:p-6 lg:p-8">
+            <div className="mb-6 overflow-hidden rounded-lg shadow-md">
+                 <Image
+                    src="/zaalim-banner.png"
+                    alt="Zaalimmm! Shawarma Banner"
+                    width={1600}
+                    height={350}
+                    className="w-full object-cover"
+                    priority
+                    data-ai-hint="shawarma banner"
+                />
+            </div>
+            <main className="flex-1">
+                {children}
+            </main>
+        </div>
       </SidebarInset>
     </SidebarProvider>
   );
