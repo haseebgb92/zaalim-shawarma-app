@@ -1,11 +1,11 @@
-export const saleVariations = {
-  small: { name: "Small Shawarma", price: 800 },
-  medium: { name: "Medium Shawarma", price: 1000 },
-  large: { name: "Large Shawarma", price: 1200 },
-  "bun-burger": { name: "Bun Burger", price: 900 },
+export const saleVariationsInfo = {
+  small: { name: "Small Shawarma", defaultPrice: 800 },
+  medium: { name: "Medium Shawarma", defaultPrice: 1000 },
+  large: { name: "Large Shawarma", defaultPrice: 1200 },
+  "bun-burger": { name: "Bun Burger", defaultPrice: 900 },
 } as const;
 
-export type SaleVariation = keyof typeof saleVariations;
+export type SaleVariation = keyof typeof saleVariationsInfo;
 
 export type Sale = {
   id: string;
