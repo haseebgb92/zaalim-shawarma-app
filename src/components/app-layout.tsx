@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import {
-  CookingPot,
   LayoutDashboard,
   DollarSign,
   Boxes,
@@ -77,17 +76,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           {/* User profile button can be added here */}
         </header>
         <div className="p-4 md:p-6 lg:p-8">
-            <div className="mb-6 overflow-hidden rounded-lg shadow-md">
-                 <Image
-                    src="/zaalim-banner.png"
-                    alt="Zaalimmm! Shawarma Banner"
-                    width={1600}
-                    height={350}
-                    className="w-full object-cover"
-                    priority
-                    data-ai-hint="shawarma banner"
-                />
-            </div>
             <main className="flex-1">
                 {children}
             </main>
