@@ -13,7 +13,7 @@ export type Sale = {
   variation: SaleVariation;
   quantity: number;
   amount: number;
-  type: 'cash' | 'card';
+  type: 'cash' | 'easypaisa' | 'jazzcash';
 };
 
 export type Expense = {
@@ -33,11 +33,11 @@ export type InventoryItem = {
 };
 
 export const mockSales: Sale[] = [
-  { id: '1', date: new Date('2023-10-26T10:00:00Z'), variation: 'large', quantity: 1, amount: 1200.00, type: 'card' },
+  { id: '1', date: new Date('2023-10-26T10:00:00Z'), variation: 'large', quantity: 1, amount: 1200.00, type: 'easypaisa' },
   { id: '2', date: new Date('2023-10-26T11:30:00Z'), variation: 'small', quantity: 2, amount: 1600.00, type: 'cash' },
-  { id: '3', date: new Date('2023-10-25T14:00:00Z'), variation: 'medium', quantity: 3, amount: 3000.00, type: 'card' },
+  { id: '3', date: new Date('2023-10-25T14:00:00Z'), variation: 'medium', quantity: 3, amount: 3000.00, type: 'jazzcash' },
   { id: '4', date: new Date('2023-10-24T18:45:00Z'), variation: 'bun-burger', quantity: 1, amount: 900.00, type: 'cash' },
-  { id: '5', date: new Date('2023-10-23T12:15:00Z'), variation: 'large', quantity: 2, amount: 2400.00, type: 'card' },
+  { id: '5', date: new Date('2023-10-23T12:15:00Z'), variation: 'large', quantity: 2, amount: 2400.00, type: 'easypaisa' },
 ];
 
 export const mockExpenses: Expense[] = [

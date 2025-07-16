@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/app-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
@@ -20,20 +20,25 @@ import { useToast } from "@/hooks/use-toast";
 const saleSchema = z.object({
   variation: z.enum(Object.keys(saleVariations) as [keyof typeof saleVariations]),
   quantity: z.coerce.number().int().min(1, "Quantity must be at least 1."),
-  type: z.enum(["cash", "card"]),
+  type: z.enum(["cash", "easypaisa", "jazzcash"]),
 });
 
 export default function SalesPage() {
   const [sales, setSales] = useState<Sale[]>(mockSales);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const form = useForm<z.infer<typeof saleSchema>>({
     resolver: zodResolver(saleSchema),
     defaultValues: {
       variation: "medium",
       quantity: 1,
-      type: "card",
+      type: "easypaisa",
     },
   });
 
@@ -131,8 +136,9 @@ export default function SalesPage() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="card">Card</SelectItem>
                             <SelectItem value="cash">Cash</SelectItem>
+                            <SelectItem value="easypaisa">Easypaisa</SelectItem>
+                            <SelectItem value="jazzcash">Jazzcash</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -186,7 +192,7 @@ export default function SalesPage() {
               <TableBody>
                 {sales.map((sale) => (
                   <TableRow key={sale.id}>
-                    <TableCell>{format(sale.date, "PPP p")}</TableCell>
+                    <TableCell>{isClient ? format(sale.date, "PPP p") : ''}</TableCell>
                     <TableCell className="font-medium">{saleVariations[sale.variation].name}</TableCell>
                     <TableCell className="text-right">{sale.quantity}</TableCell>
                     <TableCell className="capitalize">{sale.type}</TableCell>
