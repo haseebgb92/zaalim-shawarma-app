@@ -73,13 +73,15 @@ export default function SalesPage() {
   });
   
   useEffect(() => {
-    priceForm.reset({
-      small: saleVariations.small.price,
-      medium: saleVariations.medium.price,
-      large: saleVariations.large.price,
-      "bun-burger": saleVariations["bun-burger"].price,
-    });
-  }, [saleVariations, priceForm]);
+    if (isPriceDialogOpen) {
+        priceForm.reset({
+            small: saleVariations.small.price,
+            medium: saleVariations.medium.price,
+            large: saleVariations.large.price,
+            "bun-burger": saleVariations["bun-burger"].price,
+        });
+    }
+  }, [isPriceDialogOpen, saleVariations, priceForm]);
 
 
   function onSaleSubmit(values: z.infer<typeof saleSchema>) {
@@ -284,7 +286,7 @@ export default function SalesPage() {
                 {sales.map((sale) => (
                   <TableRow key={sale.id}>
                     <TableCell>{isClient ? format(sale.date, "PPP p") : ''}</TableCell>
-                    <TableCell className="font-medium">{saleVariations[sale.variation].name}</TableCell>
+                    <TableCell className="font-medium">{saleVariations[sale.variation]?.name ?? sale.variation}</TableCell>
                     <TableCell className="text-right">{sale.quantity}</TableCell>
                     <TableCell className="capitalize">{sale.type}</TableCell>
                     <TableCell className="text-right font-medium">PKR {sale.amount.toFixed(2)}</TableCell>
