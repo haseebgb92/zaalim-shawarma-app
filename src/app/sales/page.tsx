@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { AppLayout } from "@/components/app-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
@@ -14,9 +14,12 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PlusCircle, Pencil, History } from "lucide-react";
-import { mockSales, type Sale, saleVariationsInfo, type SaleVariation } from "@/lib/data";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+
+import { saleVariationsInfo } from "@/lib/data-types";
+import type { Sale, SaleVariation } from "@/lib/data-types";
+import { getSales, addSale, updateSale } from "@/lib/data-actions";
 
 const saleSchema = z.object({
   variation: z.enum(Object.keys(saleVariationsInfo) as [keyof typeof saleVariationsInfo]),
@@ -32,13 +35,14 @@ const priceSchema = z.object({
 });
 
 export default function SalesPage() {
-  const [sales, setSales] = useState<Sale[]>(mockSales);
+  const [sales, setSales] = useState<Sale[]>([]);
   const [isSaleDialogOpen, setIsSaleDialogOpen] = useState(false);
   const [isPriceDialogOpen, setIsPriceDialogOpen] = useState(false);
   const [isEditSaleDialogOpen, setIsEditSaleDialogOpen] = useState(false);
   const [editingSale, setEditingSale] = useState<Sale | null>(null);
   const [isClient, setIsClient] = useState(false);
   const { toast } = useToast();
+  const [isPending, startTransition] = useTransition();
 
   const [saleVariations, setSaleVariations] = useState(() => {
     const initialVariations: Record<string, { name: string; price: number }> = {};
@@ -54,6 +58,7 @@ export default function SalesPage() {
 
   useEffect(() => {
     setIsClient(true);
+    getSales().then(setSales);
   }, []);
 
   const saleForm = useForm<z.infer<typeof saleSchema>>({
@@ -104,21 +109,23 @@ export default function SalesPage() {
   }, [editingSale, editSaleForm]);
 
   function onSaleSubmit(values: z.infer<typeof saleSchema>) {
-    const variationDetails = saleVariations[values.variation];
-    const newSale: Sale = {
-      id: (sales.length + 1).toString(),
-      date: new Date(),
-      variation: values.variation,
-      quantity: values.quantity,
-      amount: variationDetails.price * values.quantity,
-      type: values.type,
-    };
-    setSales(prevSales => [newSale, ...prevSales]);
-    saleForm.reset();
-    setIsSaleDialogOpen(false);
-    toast({
-        title: "Sale Logged",
-        description: `${values.quantity} x ${variationDetails.name} sale recorded for PKR ${newSale.amount.toFixed(2)}.`,
+    startTransition(async () => {
+        const variationDetails = saleVariations[values.variation];
+        const newSaleData: Omit<Sale, 'id'> = {
+          date: new Date(),
+          variation: values.variation,
+          quantity: values.quantity,
+          amount: variationDetails.price * values.quantity,
+          type: values.type,
+        };
+        const newSale = await addSale(newSaleData);
+        setSales(prevSales => [newSale, ...prevSales]);
+        saleForm.reset();
+        setIsSaleDialogOpen(false);
+        toast({
+            title: "Sale Logged",
+            description: `${values.quantity} x ${variationDetails.name} sale recorded for PKR ${newSale.amount.toFixed(2)}.`,
+        });
     });
   }
 
@@ -139,46 +146,51 @@ export default function SalesPage() {
 
   function onEditSaleSubmit(values: z.infer<typeof saleSchema>) {
     if (!editingSale) return;
-
-    const originalValues = {
-        variation: editingSale.variation,
-        quantity: editingSale.quantity,
-        type: editingSale.type,
-        amount: editingSale.amount,
-    };
     
-    const variationDetails = saleVariations[values.variation];
-    const newAmount = variationDetails.price * values.quantity;
+    startTransition(async () => {
+        const originalValues = {
+            variation: editingSale.variation,
+            quantity: editingSale.quantity,
+            type: editingSale.type,
+            amount: editingSale.amount,
+        };
+        
+        const variationDetails = saleVariations[values.variation];
+        const newAmount = variationDetails.price * values.quantity;
 
-    const updatedSale: Sale = {
-        ...editingSale,
-        ...values,
-        amount: newAmount,
-        editHistory: [
-            ...(editingSale.editHistory || []),
-            {
-                editedAt: new Date(),
-                originalValues,
-            }
-        ]
-    };
-    
-    setSales(prevSales => prevSales.map(s => s.id === editingSale.id ? updatedSale : s));
-    setEditingSale(null);
-    setIsEditSaleDialogOpen(false);
+        const updatedSale: Sale = {
+            ...editingSale,
+            ...values,
+            amount: newAmount,
+            editHistory: [
+                ...(editingSale.editHistory || []),
+                {
+                    editedAt: new Date(),
+                    originalValues,
+                }
+            ]
+        };
+        
+        await updateSale(updatedSale);
+        const newSales = sales.map(s => s.id === editingSale.id ? updatedSale : s);
+        setSales(newSales);
+        setEditingSale(null);
+        setIsEditSaleDialogOpen(false);
 
-    toast({
-        title: "Sale Updated",
-        description: `Sale ID ${editingSale.id} has been updated.`,
+        toast({
+            title: "Sale Updated",
+            description: `Sale ID ${editingSale.id} has been updated.`,
+        });
     });
   }
   
   const salesByVariation = sales.reduce((acc, sale) => {
-    if (!acc[sale.variation]) {
-      acc[sale.variation] = { totalAmount: 0, quantity: 0 };
+    const variationKey = sale.variation as SaleVariation;
+    if (!acc[variationKey]) {
+      acc[variationKey] = { totalAmount: 0, quantity: 0 };
     }
-    acc[sale.variation].totalAmount += sale.amount;
-    acc[sale.variation].quantity += sale.quantity;
+    acc[variationKey].totalAmount += sale.amount;
+    acc[variationKey].quantity += sale.quantity;
     return acc;
   }, {} as Record<SaleVariation, { totalAmount: number; quantity: number }>);
 
@@ -292,7 +304,7 @@ export default function SalesPage() {
                         </FormItem>
                         )}
                     />
-                    <Button type="submit" className="w-full">Log Sale</Button>
+                    <Button type="submit" className="w-full" disabled={isPending}>{isPending ? 'Logging...' : 'Log Sale'}</Button>
                     </form>
                 </Form>
                 </DialogContent>
@@ -364,7 +376,7 @@ export default function SalesPage() {
                     </FormItem>
                     )}
                 />
-                <Button type="submit" className="w-full">Save Changes</Button>
+                <Button type="submit" className="w-full" disabled={isPending}>{isPending ? 'Saving...' : 'Save Changes'}</Button>
                 </form>
             </Form>
             </DialogContent>

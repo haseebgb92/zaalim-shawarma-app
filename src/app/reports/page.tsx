@@ -1,7 +1,6 @@
-
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/app-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
@@ -14,8 +13,9 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 
-// Mock data fetching, in a real app this would be an API call
-import { mockSales, mockExpenses, mockInventory, saleVariationsInfo } from "@/lib/data";
+import type { Sale, Expense, InventoryItem } from "@/lib/data-types";
+import { saleVariationsInfo } from "@/lib/data-types";
+import { getSales, getExpenses, getInventory } from "@/lib/data-actions";
 
 export default function ReportsPage() {
   const { toast } = useToast();
@@ -23,6 +23,16 @@ export default function ReportsPage() {
     from: new Date(2023, 9, 20),
     to: addDays(new Date(2023, 9, 20), 20),
   });
+  
+  const [sales, setSales] = useState<Sale[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+
+  useEffect(() => {
+    getSales().then(setSales);
+    getExpenses().then(setExpenses);
+    getInventory().then(setInventory);
+  }, []);
 
   const downloadCSV = (data: any[], filename: string) => {
     if (data.length === 0) {
@@ -72,8 +82,8 @@ export default function ReportsPage() {
   const downloadCompiledReport = () => {
     const interval = date?.from && date.to ? { start: date.from, end: date.to } : null;
 
-    const filteredSales = interval ? mockSales.filter(s => isWithinInterval(s.date, interval)) : mockSales;
-    const filteredExpenses = interval ? mockExpenses.filter(e => isWithinInterval(e.date, interval)) : mockExpenses;
+    const filteredSales = interval ? sales.filter(s => isWithinInterval(new Date(s.date), interval)) : sales;
+    const filteredExpenses = interval ? expenses.filter(e => isWithinInterval(new Date(e.date), interval)) : expenses;
 
     const compiledData = [
       ...filteredSales.map(sale => ({
@@ -95,11 +105,11 @@ export default function ReportsPage() {
     ];
 
     // Sort by date, most recent first
-    const sortedData = compiledData.sort((a, b) => b.Date.getTime() - a.Date.getTime());
+    const sortedData = compiledData.sort((a, b) => new Date(b.Date).getTime() - new Date(a.Date).getTime());
     
     // Format for CSV
     const csvData = sortedData.map(item => ({
-        Date: format(item.Date, 'yyyy-MM-dd HH:mm:ss'),
+        Date: format(new Date(item.Date), 'yyyy-MM-dd HH:mm:ss'),
         Type: item.Type,
         Description: item.Description,
         Category: item.Category,
@@ -109,6 +119,26 @@ export default function ReportsPage() {
     
     downloadCSV(csvData, 'compiled_report');
   };
+  
+  const handleDownload = (dataType: 'sales' | 'expenses' | 'inventory') => {
+    let data;
+    let filename;
+    switch (dataType) {
+        case 'sales':
+            data = sales;
+            filename = 'sales_report';
+            break;
+        case 'expenses':
+            data = expenses;
+            filename = 'expenses_report';
+            break;
+        case 'inventory':
+            data = inventory;
+            filename = 'inventory_snapshot';
+            break;
+    }
+    downloadCSV(data, filename);
+  }
 
   return (
     <AppLayout>
@@ -159,15 +189,15 @@ export default function ReportsPage() {
               </Popover>
             </div>
             <div className="grid gap-4 sm:grid-cols-3">
-              <Button onClick={() => downloadCSV(mockSales, 'sales_report')}>
+              <Button onClick={() => handleDownload('sales')}>
                 <FileDown className="mr-2 h-4 w-4" />
                 Export Sales
               </Button>
-              <Button onClick={() => downloadCSV(mockExpenses, 'expenses_report')}>
+              <Button onClick={() => handleDownload('expenses')}>
                 <FileDown className="mr-2 h-4 w-4" />
                 Export Expenses
               </Button>
-              <Button onClick={() => downloadCSV(mockInventory, 'inventory_snapshot')}>
+              <Button onClick={() => handleDownload('inventory')}>
                 <FileDown className="mr-2 h-4 w-4" />
                 Export Inventory
               </Button>

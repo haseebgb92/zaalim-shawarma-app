@@ -1,57 +1,13 @@
 "use client";
-
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { AppLayout } from "@/components/app-layout";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { DollarSign, CreditCard, Wallet } from "lucide-react";
-import { mockSales, mockExpenses, mockInventory, saleVariationsInfo } from "@/lib/data";
-import type { Expense, InventoryItem, Sale, SaleVariation } from "@/lib/data";
-
-// Mock data
-const salesData = [
-  { name: 'Mon', sales: 4000, expenses: 2400 },
-  { name: 'Tue', sales: 3000, expenses: 1398 },
-  { name: 'Wed', sales: 2000, expenses: 9800 },
-  { name: 'Thu', sales: 2780, expenses: 3908 },
-  { name: 'Fri', sales: 1890, expenses: 4800 },
-  { name: 'Sat', sales: 2390, expenses: 3800 },
-  { name: 'Sun', sales: 3490, expenses: 4300 },
-];
-
-const totalSales = mockSales.reduce((sum, sale) => sum + sale.amount, 0);
-const totalExpenses = mockExpenses.reduce((sum, expense) => sum + expense.amount, 0);
-const netProfit = totalSales - totalExpenses;
-
-// Process data for charts
-const expenseChartData = mockExpenses
-  .reduce((acc, expense) => {
-    const existing = acc.find(item => item.name === expense.category);
-    if (existing) {
-      existing.value += expense.amount;
-    } else {
-      acc.push({ name: expense.category, value: expense.amount });
-    }
-    return acc;
-  }, [] as { name: string; value: number }[])
-  .map(item => ({...item, name: item.name.charAt(0).toUpperCase() + item.name.slice(1)}));
-
-
-const salesByVariationData = mockSales.reduce((acc, sale) => {
-    const existing = acc.find(item => item.name === saleVariationsInfo[sale.variation].name);
-    if (existing) {
-      existing.value += sale.quantity;
-    } else {
-      acc.push({ name: saleVariationsInfo[sale.variation].name, value: sale.quantity });
-    }
-    return acc;
-}, [] as { name: string; value: number }[]);
-
-
-const inventoryChartData = mockInventory.map(item => ({
-  name: item.name,
-  value: item.quantity
-}));
+import type { Expense, InventoryItem, Sale, SaleVariation } from "@/lib/data-types";
+import { saleVariationsInfo } from "@/lib/data-types";
+import { getSales, getExpenses, getInventory } from "@/lib/data-actions";
 
 
 const COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))", "hsl(var(--chart-5))"];
@@ -78,6 +34,64 @@ const CustomTooltip = ({ active, payload }: any) => {
 
 
 export default function DashboardPage() {
+  const [sales, setSales] = useState<Sale[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+
+  useEffect(() => {
+    getSales().then(setSales);
+    getExpenses().then(setExpenses);
+    getInventory().then(setInventory);
+  }, []);
+
+  // Mock data for weekly sales/expenses bar chart
+  const weeklyChartData = [
+    { name: 'Mon', sales: 4000, expenses: 2400 },
+    { name: 'Tue', sales: 3000, expenses: 1398 },
+    { name: 'Wed', sales: 2000, expenses: 9800 },
+    { name: 'Thu', sales: 2780, expenses: 3908 },
+    { name: 'Fri', sales: 1890, expenses: 4800 },
+    { name: 'Sat', sales: 2390, expenses: 3800 },
+    { name: 'Sun', sales: 3490, expenses: 4300 },
+  ];
+
+  const totalSales = sales.reduce((sum, sale) => sum + sale.amount, 0);
+  const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+  const netProfit = totalSales - totalExpenses;
+
+  // Process data for charts
+  const expenseChartData = expenses
+    .reduce((acc, expense) => {
+      const existing = acc.find(item => item.name === expense.category);
+      if (existing) {
+        existing.value += expense.amount;
+      } else {
+        acc.push({ name: expense.category, value: expense.amount });
+      }
+      return acc;
+    }, [] as { name: string; value: number }[])
+    .map(item => ({...item, name: item.name.charAt(0).toUpperCase() + item.name.slice(1)}));
+
+
+  const salesByVariationData = sales.reduce((acc, sale) => {
+      const info = saleVariationsInfo[sale.variation];
+      if (!info) return acc;
+      const existing = acc.find(item => item.name === info.name);
+      if (existing) {
+        existing.value += sale.quantity;
+      } else {
+        acc.push({ name: info.name, value: sale.quantity });
+      }
+      return acc;
+  }, [] as { name: string; value: number }[]);
+
+
+  const inventoryChartData = inventory.map(item => ({
+    name: item.name,
+    value: item.quantity
+  }));
+
+
   return (
     <AppLayout>
       <div className="flex flex-col gap-6">
@@ -194,7 +208,7 @@ export default function DashboardPage() {
           <CardContent>
             <div className="h-[350px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={salesData}>
+                <BarChart data={weeklyChartData}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
                   <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
                   <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `PKR${value}`} />

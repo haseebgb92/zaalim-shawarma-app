@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/app-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
@@ -14,9 +14,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { PlusCircle } from "lucide-react";
-import { mockExpenses, type Expense } from "@/lib/data";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import type { Expense } from "@/lib/data-types";
+import { getExpenses, addExpense } from "@/lib/data-actions";
 
 const expenseSchema = z.object({
   amount: z.coerce.number().min(0.01, "Amount must be positive."),
@@ -25,9 +26,13 @@ const expenseSchema = z.object({
 });
 
 export default function ExpensesPage() {
-  const [expenses, setExpenses] = useState<Expense[]>(mockExpenses);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    getExpenses().then(setExpenses);
+  }, []);
 
   const form = useForm<z.infer<typeof expenseSchema>>({
     resolver: zodResolver(expenseSchema),
@@ -38,19 +43,28 @@ export default function ExpensesPage() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof expenseSchema>) {
-    const newExpense: Expense = {
-      id: (expenses.length + 1).toString(),
+  async function onSubmit(values: z.infer<typeof expenseSchema>) {
+    const newExpenseData = {
       date: new Date(),
       ...values,
     };
-    setExpenses(prevExpenses => [newExpense, ...prevExpenses]);
-    form.reset();
-    setIsDialogOpen(false);
-    toast({
-        title: "Expense Recorded",
-        description: `Expense of PKR ${values.amount.toFixed(2)} for ${values.category} has been recorded.`,
-    })
+    
+    try {
+      const newExpense = await addExpense(newExpenseData);
+      setExpenses(prevExpenses => [newExpense, ...prevExpenses]);
+      form.reset();
+      setIsDialogOpen(false);
+      toast({
+          title: "Expense Recorded",
+          description: `Expense of PKR ${values.amount.toFixed(2)} for ${values.category} has been recorded.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to record expense. Please try again.",
+        variant: "destructive"
+      });
+    }
   }
 
   return (
@@ -102,7 +116,9 @@ export default function ExpensesPage() {
                       <FormMessage />
                     </FormItem>
                   )} />
-                  <Button type="submit" className="w-full">Record Expense</Button>
+                  <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+                    {form.formState.isSubmitting ? "Recording..." : "Record Expense"}
+                  </Button>
                 </form>
               </Form>
             </DialogContent>
@@ -126,7 +142,7 @@ export default function ExpensesPage() {
               <TableBody>
                 {expenses.map((expense) => (
                   <TableRow key={expense.id}>
-                    <TableCell>{format(expense.date, "PPP")}</TableCell>
+                    <TableCell>{format(new Date(expense.date), "PPP")}</TableCell>
                     <TableCell className="capitalize">{expense.category}</TableCell>
                     <TableCell>{expense.description}</TableCell>
                     <TableCell className="text-right font-medium">PKR {expense.amount.toFixed(2)}</TableCell>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { AppLayout } from "@/components/app-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
@@ -13,13 +13,20 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { mockInventory, mockInventoryTransactions, type InventoryItem, type InventoryTransaction, mockExpenses, type Expense } from "@/lib/data";
 import { format } from "date-fns";
 import { PlusCircle, MinusCircle, Pencil, History } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import type { InventoryItem, InventoryTransaction } from "@/lib/data-types";
+import {
+  getInventory,
+  getInventoryTransactions,
+  addInventoryTransaction,
+  updateInventoryTransaction,
+  updateAllInventory,
+  addExpenseFromPurchase,
+} from "@/lib/data-actions";
 
 const purchaseSchema = z.object({
   name: z.string().min(1, "Ingredient name is required."),
@@ -41,19 +48,22 @@ const editTransactionSchema = z.object({
     type: z.enum(['purchase', 'usage'])
 });
 
+
 export default function InventoryPage() {
-  const [inventory, setInventory] = useState<InventoryItem[]>(mockInventory);
-  const [transactions, setTransactions] = useState<InventoryTransaction[]>(mockInventoryTransactions);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [transactions, setTransactions] = useState<InventoryTransaction[]>([]);
   const [isPurchaseDialogOpen, setIsPurchaseDialogOpen] = useState(false);
   const [isUsageDialogOpen, setIsUsageDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<InventoryTransaction | null>(null);
-
   const [isClient, setIsClient] = useState(false);
   const { toast } = useToast();
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     setIsClient(true);
+    getInventory().then(setInventory);
+    getInventoryTransactions().then(setTransactions);
   }, []);
 
   const purchaseForm = useForm<z.infer<typeof purchaseSchema>>({
@@ -86,8 +96,6 @@ export default function InventoryPage() {
           type: editingTransaction.type
       });
       setIsEditDialogOpen(true);
-    } else {
-      setIsEditDialogOpen(false);
     }
   }, [editingTransaction, editForm]);
 
@@ -107,94 +115,106 @@ export default function InventoryPage() {
   }
 
   const onPurchaseSubmit = (values: z.infer<typeof purchaseSchema>) => {
-    const newTransaction: InventoryTransaction = {
-      id: `p${transactions.length + 1}`,
-      date: new Date(),
-      type: 'purchase',
-      ...values,
-    };
-    setTransactions(prev => [newTransaction, ...prev]);
-    
-    setInventory(prev => {
-        const existingItem = prev.find(item => item.name.toLowerCase() === values.name.toLowerCase() && item.unit === values.unit);
-        if (existingItem) {
-            return prev.map(item => item.id === existingItem.id ? {...item, quantity: item.quantity + values.quantity, lastUpdated: new Date()} : item);
-        }
-        return [...prev, {id: (prev.length+1).toString(), name: values.name, quantity: values.quantity, unit: values.unit, lastUpdated: new Date()}];
-    });
-
-    if (values.cost && values.cost > 0) {
-        const newExpense: Expense = {
-            id: `e${mockExpenses.length + 1}`,
+    startTransition(async () => {
+        const newTransactionData: Omit<InventoryTransaction, 'id'> = {
             date: new Date(),
-            amount: values.cost,
-            category: 'supplies',
-            description: `Purchase: ${values.quantity} ${values.unit} of ${values.name}`
+            type: 'purchase',
+            ...values,
         };
-        mockExpenses.unshift(newExpense);
-    }
 
-    toast({ title: "Purchase Recorded", description: `Added ${values.quantity} ${values.unit} of ${values.name}.` });
-    purchaseForm.reset({ name: "", quantity: 0, unit: "kg", cost: 0 });
-    setIsPurchaseDialogOpen(false);
+        const newTransaction = await addInventoryTransaction(newTransactionData);
+        setTransactions(prev => [newTransaction, ...prev]);
+        
+        let newInventory: InventoryItem[];
+        const existingItem = inventory.find(item => item.name.toLowerCase() === values.name.toLowerCase() && item.unit === values.unit);
+        if (existingItem) {
+            newInventory = inventory.map(item => item.id === existingItem.id ? {...item, quantity: item.quantity + values.quantity, lastUpdated: new Date()} : item);
+        } else {
+            newInventory = [...inventory, {id: (inventory.length+1).toString(), name: values.name, quantity: values.quantity, unit: values.unit, lastUpdated: new Date()}];
+        }
+        setInventory(newInventory);
+        await updateAllInventory(newInventory);
+
+        if (values.cost && values.cost > 0) {
+            await addExpenseFromPurchase({
+                name: values.name,
+                quantity: values.quantity,
+                unit: values.unit,
+                cost: values.cost
+            });
+        }
+
+        toast({ title: "Purchase Recorded", description: `Added ${values.quantity} ${values.unit} of ${values.name}.` });
+        purchaseForm.reset({ name: "", quantity: 0, unit: "kg", cost: 0 });
+        setIsPurchaseDialogOpen(false);
+    });
   }
 
   const onUsageSubmit = (values: z.infer<typeof usageSchema>) => {
-    const itemToUpdate = inventory.find(item => item.id === values.id);
-    if (!itemToUpdate) {
-        toast({ variant: "destructive", title: "Error", description: "Item not found." });
-        return;
-    }
-    if (itemToUpdate.quantity < values.quantity) {
-        toast({ variant: "destructive", title: "Insufficient Stock", description: `Cannot use ${values.quantity} ${itemToUpdate.unit} of ${itemToUpdate.name}. Only ${itemToUpdate.quantity} ${itemToUpdate.unit} available.` });
-        return;
-    }
-    const newTransaction: InventoryTransaction = {
-        id: `u${transactions.length + 1}`,
-        date: new Date(),
-        type: 'usage',
-        name: itemToUpdate.name,
-        quantity: values.quantity,
-        unit: itemToUpdate.unit
-    };
-    setTransactions(prev => [newTransaction, ...prev]);
+    startTransition(async () => {
+        const itemToUpdate = inventory.find(item => item.id === values.id);
+        if (!itemToUpdate) {
+            toast({ variant: "destructive", title: "Error", description: "Item not found." });
+            return;
+        }
+        if (itemToUpdate.quantity < values.quantity) {
+            toast({ variant: "destructive", title: "Insufficient Stock", description: `Cannot use ${values.quantity} ${itemToUpdate.unit} of ${itemToUpdate.name}. Only ${itemToUpdate.quantity} ${itemToUpdate.unit} available.` });
+            return;
+        }
+        const newTransactionData: Omit<InventoryTransaction, 'id'> = {
+            date: new Date(),
+            type: 'usage',
+            name: itemToUpdate.name,
+            quantity: values.quantity,
+            unit: itemToUpdate.unit
+        };
+        const newTransaction = await addInventoryTransaction(newTransactionData);
+        setTransactions(prev => [newTransaction, ...prev]);
 
-    setInventory(prev => prev.map(item => item.id === values.id ? {...item, quantity: item.quantity - values.quantity, lastUpdated: new Date()} : item));
+        const newInventory = inventory.map(item => item.id === values.id ? {...item, quantity: item.quantity - values.quantity, lastUpdated: new Date()} : item);
+        setInventory(newInventory);
+        await updateAllInventory(newInventory);
 
-    toast({ title: "Usage Recorded", description: `Used ${values.quantity} ${itemToUpdate.unit} of ${itemToUpdate.name}.` });
-    usageForm.reset();
-    setIsUsageDialogOpen(false);
+        toast({ title: "Usage Recorded", description: `Used ${values.quantity} ${itemToUpdate.unit} of ${itemToUpdate.name}.` });
+        usageForm.reset();
+        setIsUsageDialogOpen(false);
+    });
   }
 
   const onEditSubmit = (values: z.infer<typeof editTransactionSchema>) => {
     if (!editingTransaction) return;
-
-    const updatedTransaction: InventoryTransaction = {
-        ...editingTransaction,
-        ...values,
-        cost: values.type === 'purchase' ? values.cost : undefined,
-        editHistory: [
-            ...(editingTransaction.editHistory || []),
-            {
-                editedAt: new Date(),
-                originalValues: {
-                    type: editingTransaction.type,
-                    name: editingTransaction.name,
-                    quantity: editingTransaction.quantity,
-                    unit: editingTransaction.unit,
-                    cost: editingTransaction.cost,
-                }
-            }
-        ]
-    };
     
-    setTransactions(prev => prev.map(t => t.id === editingTransaction.id ? updatedTransaction : t));
-    setEditingTransaction(null);
-    setIsEditDialogOpen(false);
-
-    toast({
-        title: "Transaction Updated",
-        description: `Transaction ID ${editingTransaction.id} has been updated. Please check current inventory levels.`,
+    startTransition(async () => {
+        const updatedTransaction: InventoryTransaction = {
+            ...editingTransaction,
+            ...values,
+            cost: values.type === 'purchase' ? values.cost : undefined,
+            editHistory: [
+                ...(editingTransaction.editHistory || []),
+                {
+                    editedAt: new Date(),
+                    originalValues: {
+                        type: editingTransaction.type,
+                        name: editingTransaction.name,
+                        quantity: editingTransaction.quantity,
+                        unit: editingTransaction.unit,
+                        cost: editingTransaction.cost,
+                    }
+                }
+            ]
+        };
+        
+        await updateInventoryTransaction(updatedTransaction);
+        const newTransactions = transactions.map(t => t.id === editingTransaction.id ? updatedTransaction : t)
+        setTransactions(newTransactions);
+        
+        setEditingTransaction(null);
+        setIsEditDialogOpen(false);
+        
+        toast({
+            title: "Transaction Updated",
+            description: `Transaction ID ${editingTransaction.id} has been updated. You may need to manually reconcile inventory levels if quantities were changed.`,
+        });
     });
   };
 
@@ -208,7 +228,7 @@ export default function InventoryPage() {
 
     return (
         <FormField control={editForm.control} name="cost" render={({ field }) => (
-            <FormItem><FormLabel>Total Cost (PKR)</FormLabel><FormControl><Input type="number" {...field} value={field.value || 0} /></FormControl><FormMessage /></FormItem>
+            <FormItem><FormLabel>Total Cost (PKR)</FormLabel><FormControl><Input type="number" {...field} value={field.value ?? 0} /></FormControl><FormMessage /></FormItem>
         )} />
     );
   };
@@ -265,7 +285,7 @@ export default function InventoryPage() {
                           <FormMessage />
                         </FormItem>
                       )} />
-                    <Button type="submit" className="w-full">Add to Inventory</Button>
+                    <Button type="submit" className="w-full" disabled={isPending}>{isPending ? "Adding..." : "Add to Inventory"}</Button>
                   </form>
                 </Form>
               </DialogContent>
@@ -300,7 +320,7 @@ export default function InventoryPage() {
                         <FormMessage />
                       </FormItem>
                     )} />
-                    <Button type="submit" className="w-full">Record Usage</Button>
+                    <Button type="submit" className="w-full" disabled={isPending}>{isPending ? "Recording..." : "Record Usage"}</Button>
                   </form>
                 </Form>
               </DialogContent>
@@ -333,7 +353,7 @@ export default function InventoryPage() {
                             )} />
                         </div>
                         <EditFormCostField />
-                        <Button type="submit" className="w-full">Save Changes</Button>
+                        <Button type="submit" className="w-full" disabled={isPending}>{isPending ? "Saving..." : "Save Changes"}</Button>
                     </form>
                 </Form>
             </DialogContent>
