@@ -47,11 +47,8 @@ export default function ReportsPage() {
         if (typeof val === 'string') {
           // Escape quotes and wrap in quotes
           val = `"${val.replace(/"/g, '""')}"`;
-        } else {
-          val = JSON.stringify(val);
         }
-        // Remove commas from the final value to not break CSV format
-        return val.replace(/,/g, '');
+        return val;
       }).join(','))
     ].join('\n');
 
