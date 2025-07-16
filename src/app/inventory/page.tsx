@@ -33,7 +33,11 @@ const usageSchema = z.object({
   quantity: z.coerce.number().positive("Quantity must be a positive number."),
 });
 
-const editTransactionSchema = purchaseSchema.extend({
+const editTransactionSchema = z.object({
+    name: z.string().min(1, "Ingredient name is required."),
+    quantity: z.coerce.number().positive("Quantity must be a positive number."),
+    unit: z.enum(["kg", "g", "l", "ml", "pcs"]),
+    cost: z.coerce.number().min(0, "Cost must be a non-negative number.").optional(),
     type: z.enum(['purchase', 'usage'])
 });
 
@@ -111,7 +115,6 @@ export default function InventoryPage() {
     };
     setTransactions(prev => [newTransaction, ...prev]);
     
-    // Update inventory
     setInventory(prev => {
         const existingItem = prev.find(item => item.name.toLowerCase() === values.name.toLowerCase() && item.unit === values.unit);
         if (existingItem) {
@@ -120,7 +123,6 @@ export default function InventoryPage() {
         return [...prev, {id: (prev.length+1).toString(), name: values.name, quantity: values.quantity, unit: values.unit, lastUpdated: new Date()}];
     });
 
-    // Add to expenses
     if (values.cost && values.cost > 0) {
         const newExpense: Expense = {
             id: `e${mockExpenses.length + 1}`,
@@ -166,10 +168,6 @@ export default function InventoryPage() {
 
   const onEditSubmit = (values: z.infer<typeof editTransactionSchema>) => {
     if (!editingTransaction) return;
-
-    // This part is tricky as editing a past transaction should recalculate current inventory.
-    // For simplicity, we'll just update the transaction and show a warning that inventory might need manual adjustment.
-    // A more complex implementation would re-run all transactions to get the current state.
 
     const updatedTransaction: InventoryTransaction = {
         ...editingTransaction,
