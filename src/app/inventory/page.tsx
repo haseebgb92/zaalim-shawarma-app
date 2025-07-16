@@ -62,7 +62,14 @@ export default function InventoryPage() {
   });
   
   const editForm = useForm<z.infer<typeof editTransactionSchema>>({
-      resolver: zodResolver(editTransactionSchema)
+      resolver: zodResolver(editTransactionSchema),
+      defaultValues: {
+        name: "",
+        quantity: 0,
+        unit: "kg",
+        cost: 0,
+        type: "purchase",
+      }
   });
 
   useEffect(() => {
@@ -71,7 +78,7 @@ export default function InventoryPage() {
           name: editingTransaction.name,
           quantity: editingTransaction.quantity,
           unit: editingTransaction.unit,
-          cost: editingTransaction.cost || 0, // Ensure cost is not undefined
+          cost: editingTransaction.cost || 0,
           type: editingTransaction.type
       });
       setIsEditDialogOpen(true);
@@ -167,6 +174,7 @@ export default function InventoryPage() {
     const updatedTransaction: InventoryTransaction = {
         ...editingTransaction,
         ...values,
+        cost: values.type === 'purchase' ? values.cost : undefined,
         editHistory: [
             ...(editingTransaction.editHistory || []),
             {
@@ -194,6 +202,19 @@ export default function InventoryPage() {
 
   const purchases = transactions.filter(t => t.type === 'purchase');
   const usages = transactions.filter(t => t.type === 'usage');
+  
+  const EditFormCostField = () => {
+    const type = useWatch({ control: editForm.control, name: "type" });
+
+    if (type !== 'purchase') return null;
+
+    return (
+        <FormField control={editForm.control} name="cost" render={({ field }) => (
+            <FormItem><FormLabel>Total Cost (PKR)</FormLabel><FormControl><Input type="number" {...field} value={field.value || 0} /></FormControl><FormMessage /></FormItem>
+        )} />
+    );
+  };
+
 
   return (
     <AppLayout>
@@ -313,11 +334,7 @@ export default function InventoryPage() {
                                 </FormItem>
                             )} />
                         </div>
-                        {useWatch({control: editForm.control, name: "type"}) === 'purchase' && (
-                             <FormField control={editForm.control} name="cost" render={({ field }) => (
-                                <FormItem><FormLabel>Total Cost (PKR)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-                            )} />
-                        )}
+                        <EditFormCostField />
                         <Button type="submit" className="w-full">Save Changes</Button>
                     </form>
                 </Form>
