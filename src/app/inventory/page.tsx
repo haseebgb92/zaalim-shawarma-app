@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/app-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
@@ -34,7 +34,12 @@ export default function InventoryPage() {
   const [inventory, setInventory] = useState<InventoryItem[]>(mockInventory);
   const [isPurchaseDialogOpen, setIsPurchaseDialogOpen] = useState(false);
   const [isUsageDialogOpen, setIsUsageDialogOpen] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const purchaseForm = useForm<z.infer<typeof inventoryActionSchema>>({
     resolver: zodResolver(inventoryActionSchema),
@@ -250,7 +255,7 @@ export default function InventoryPage() {
                         {getBadgeText(item.quantity, item.unit)}
                       </Badge>
                     </TableCell>
-                    <TableCell>{format(new Date(item.lastUpdated), "PPP p")}</TableCell>
+                    <TableCell>{isClient ? format(new Date(item.lastUpdated), "PPP p") : ''}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
