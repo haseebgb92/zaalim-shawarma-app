@@ -41,7 +41,23 @@ export type InventoryItem = {
   lastUpdated: Date;
 };
 
-export const mockSales: Sale[] = [
+// New types for inventory transactions
+export type InventoryTransaction = {
+  id: string;
+  date: Date;
+  type: 'purchase' | 'usage';
+  name: string;
+  quantity: number;
+  unit: 'kg' | 'g' | 'l' | 'ml' | 'pcs';
+  cost?: number; // Optional cost for purchases
+  editHistory?: {
+    editedAt: Date;
+    originalValues: Omit<InventoryTransaction, 'id' | 'date' | 'editHistory'>;
+  }[];
+};
+
+
+export let mockSales: Sale[] = [
   { id: '1', date: new Date('2023-10-26T10:00:00Z'), variation: 'large', quantity: 1, amount: 1200.00, type: 'easypaisa' },
   { id: '2', date: new Date('2023-10-26T11:30:00Z'), variation: 'small', quantity: 2, amount: 1600.00, type: 'cash' },
   { id: '3', date: new Date('2023-10-25T14:00:00Z'), variation: 'medium', quantity: 3, amount: 3000.00, type: 'jazzcash' },
@@ -49,18 +65,25 @@ export const mockSales: Sale[] = [
   { id: '5', date: new Date('2023-10-23T12:15:00Z'), variation: 'large', quantity: 2, amount: 2400.00, type: 'easypaisa' },
 ];
 
-export const mockExpenses: Expense[] = [
+export let mockExpenses: Expense[] = [
   { id: '1', date: new Date('2023-10-25T09:00:00Z'), amount: 1500, category: 'rent', description: 'Monthly rent' },
   { id: '2', date: new Date('2023-10-20T17:30:00Z'), amount: 350, category: 'supplies', description: 'Vegetables and meat' },
   { id: '3', date: new Date('2023-10-15T11:00:00Z'), amount: 250, category: 'utilities', description: 'Electricity bill' },
   { id: '4', date: new Date('2023-10-01T12:00:00Z'), amount: 2500, category: 'salaries', description: 'Staff salaries' },
 ];
 
-export const mockInventory: InventoryItem[] = [
+export let mockInventory: InventoryItem[] = [
   { id: '1', name: 'Chicken', quantity: 20, unit: 'kg', lastUpdated: new Date('2023-10-26T10:00:00Z') },
   { id: '2', name: 'Tomatoes', quantity: 8, unit: 'kg', lastUpdated: new Date('2023-10-26T10:00:00Z') },
   { id: '3', name: 'Pita Bread', quantity: 100, unit: 'pcs', lastUpdated: new Date('2023-10-26T10:00:00Z') },
   { id: '4', name: 'Tahini Sauce', quantity: 5, unit: 'l', lastUpdated: new Date('2023-10-26T10:00:00Z') },
   { id: '5', name: 'Onions', quantity: 15, unit: 'kg', lastUpdated: new Date('2023-10-26T10:00:00Z') },
   { id: '6', name: 'Lettuce', quantity: 5, unit: 'kg', lastUpdated: new Date('2023-10-26T10:00:00Z') },
+];
+
+// Mock data for inventory transactions
+export let mockInventoryTransactions: InventoryTransaction[] = [
+    { id: 'p1', date: new Date('2023-10-26T10:00:00Z'), type: 'purchase', name: 'Chicken', quantity: 25, unit: 'kg', cost: 20000 },
+    { id: 'u1', date: new Date('2023-10-26T12:00:00Z'), type: 'usage', name: 'Chicken', quantity: 5, unit: 'kg' },
+    { id: 'p2', date: new Date('2023-10-26T10:00:00Z'), type: 'purchase', name: 'Pita Bread', quantity: 100, unit: 'pcs', cost: 2500 },
 ];
