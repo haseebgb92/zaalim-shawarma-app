@@ -22,7 +22,6 @@ import {
   Boxes,
   CreditCard,
   FileDown,
-  Sparkles,
 } from "lucide-react";
 
 const menuItems = [
@@ -31,7 +30,6 @@ const menuItems = [
   { href: "/inventory", label: "Inventory", icon: Boxes },
   { href: "/expenses", label: "Expenses", icon: CreditCard },
   { href: "/reports", label: "Reports", icon: FileDown },
-  { href: "/suggestions", label: "AI Suggestions", icon: Sparkles },
 ];
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
