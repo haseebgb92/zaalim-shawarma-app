@@ -44,7 +44,7 @@ export default function ExpensesPage() {
       date: new Date(),
       ...values,
     };
-    setExpenses([newExpense, ...expenses]);
+    setExpenses(prevExpenses => [newExpense, ...prevExpenses]);
     form.reset();
     setIsDialogOpen(false);
     toast({

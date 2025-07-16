@@ -41,10 +41,10 @@ export const mockSales: Sale[] = [
 ];
 
 export const mockExpenses: Expense[] = [
-  { id: '1', date: new Date('2023-10-25'), amount: 1500, category: 'rent', description: 'Monthly rent' },
-  { id: '2', date: new Date('2023-10-20'), amount: 350, category: 'supplies', description: 'Vegetables and meat' },
-  { id: '3', date: new Date('2023-10-15'), amount: 250, category: 'utilities', description: 'Electricity bill' },
-  { id: '4', date: new Date('2023-10-01'), amount: 2500, category: 'salaries', description: 'Staff salaries' },
+  { id: '1', date: new Date('2023-10-25T09:00:00Z'), amount: 1500, category: 'rent', description: 'Monthly rent' },
+  { id: '2', date: new Date('2023-10-20T17:30:00Z'), amount: 350, category: 'supplies', description: 'Vegetables and meat' },
+  { id: '3', date: new Date('2023-10-15T11:00:00Z'), amount: 250, category: 'utilities', description: 'Electricity bill' },
+  { id: '4', date: new Date('2023-10-01T12:00:00Z'), amount: 2500, category: 'salaries', description: 'Staff salaries' },
 ];
 
 export const mockInventory: InventoryItem[] = [

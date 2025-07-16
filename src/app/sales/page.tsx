@@ -47,7 +47,7 @@ export default function SalesPage() {
       amount: variationDetails.price * values.quantity,
       type: values.type,
     };
-    setSales([newSale, ...sales]);
+    setSales(prevSales => [newSale, ...prevSales]);
     form.reset();
     setIsDialogOpen(false);
     toast({
