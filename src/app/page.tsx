@@ -97,13 +97,14 @@ export default function DashboardPage() {
       <div className="flex flex-col gap-6">
         <div className="mb-6 overflow-hidden rounded-lg shadow-md hidden md:block">
             <Image
-            src="/zaalim-banner.png"
+            src="/banner.jpg"
             alt="Zaalimmm! Shawarma Banner"
             width={1600}
             height={350}
             className="w-full object-cover"
             priority
             data-ai-hint="shawarma banner"
+            onError={(e) => { e.currentTarget.src = 'https://placehold.co/1600x350.png'; }}
             />
         </div>
         <h1 className="font-headline text-3xl font-bold">Dashboard</h1>
