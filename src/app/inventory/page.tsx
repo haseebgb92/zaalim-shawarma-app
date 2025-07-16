@@ -71,7 +71,7 @@ export default function InventoryPage() {
           name: editingTransaction.name,
           quantity: editingTransaction.quantity,
           unit: editingTransaction.unit,
-          cost: editingTransaction.cost,
+          cost: editingTransaction.cost || 0, // Ensure cost is not undefined
           type: editingTransaction.type
       });
       setIsEditDialogOpen(true);
